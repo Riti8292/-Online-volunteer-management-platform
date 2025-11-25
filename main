@@ -1,0 +1,213 @@
+package model;
+
+import java.util.List;
+
+public class Volunteer {
+    private int id;
+    private String name;
+    private String email;
+    private List<String> skills;
+    private boolean available;
+
+    public Volunteer(int id, String name, String email, List<String> skills, boolean available) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.skills = skills;
+        this.available = available;
+    }
+
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
+    public List<String> getSkills() { return skills; }
+    public boolean isAvailable() { return available; }
+
+    @Override
+    public String toString() {
+        return "Volunteer{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", skills=" + skills +
+                ", available=" + available +
+                '}';
+    }
+}
+package model;
+
+import java.time.LocalDate;
+
+public class Event {
+    private int id;
+    private String title;
+    private String organizer;
+    private LocalDate date;
+    private int capacity;
+
+    public Event(int id, String title, String organizer, LocalDate date, int capacity) {
+        this.id = id;
+        this.title = title;
+        this.organizer = organizer;
+        this.date = date;
+        this.capacity = capacity;
+    }
+
+    public int getId() { return id; }
+    public String getTitle() { return title; }
+    public LocalDate getDate() { return date; }
+    public int getCapacity() { return capacity; }
+
+    @Override
+    public String toString() {
+        return "Event{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", capacity=" + capacity +
+                '}';
+    }
+}
+package model;
+
+public class Assignment {
+    private int volunteerId;
+    private int eventId;
+
+    public Assignment(int volunteerId, int eventId) {
+        this.volunteerId = volunteerId;
+        this.eventId = eventId;
+    }
+
+    public int getVolunteerId() { return volunteerId; }
+    public int getEventId() { return eventId; }
+
+    @Override
+    public String toString() {
+        return "Assignment{volunteer=" + volunteerId + ", event=" + eventId + '}';
+    }
+}
+package service;
+
+import model.Volunteer;
+import utils.ValidationUtils;
+import java.util.*;
+
+public class VolunteerService {
+
+    private Map<Integer, Volunteer> volunteers = new HashMap<>();
+
+    public void addVolunteer(Volunteer v) {
+        ValidationUtils.validateVolunteer(v);
+        volunteers.put(v.getId(), v);
+    }
+
+    public Volunteer getVolunteer(int id) {
+        return volunteers.get(id);
+    }
+
+    public Collection<Volunteer> getAll() {
+        return volunteers.values();
+    }
+}
+package service;
+
+import model.Event;
+import utils.ValidationUtils;
+import java.util.*;
+
+public class EventService {
+
+    private Map<Integer, Event> events = new HashMap<>();
+
+    public void addEvent(Event e) {
+        ValidationUtils.validateEvent(e);
+        events.put(e.getId(), e);
+    }
+
+    public Event getEvent(int id) {
+        return events.get(id);
+    }
+
+    public Collection<Event> getAllEvents() {
+        return events.values();
+    }
+}
+package service;
+
+import model.*;
+import utils.CustomExceptions;
+
+import java.util.*;
+
+public class AssignmentService {
+
+    private List<Assignment> assignments = new ArrayList<>();
+
+    public void assignVolunteer(int volunteerId, int eventId, boolean available, int capacity, long assignedCount) {
+
+        if (!available)
+            throw new CustomExceptions.VolunteerUnavailableException("Volunteer not available!");
+
+        if (assignedCount >= capacity)
+            throw new CustomExceptions.EventFullException("Event is full!");
+
+        assignments.add(new Assignment(volunteerId, eventId));
+    }
+
+    public List<Assignment> getAssignments() {
+        return assignments;
+    }
+}
+package utils;
+
+import model.*;
+
+public class ValidationUtils {
+
+    public static void validateVolunteer(Volunteer v) {
+        if (!v.getEmail().contains("@"))
+            throw new IllegalArgumentException("Invalid email!");
+        if (v.getName().isBlank())
+            throw new IllegalArgumentException("Name cannot be blank!");
+    }
+
+    public static void validateEvent(Event e) {
+        if (e.getCapacity() <= 0)
+            throw new IllegalArgumentException("Capacity must be positive!");
+        if (e.getDate().isBefore(java.time.LocalDate.now()))
+            throw new IllegalArgumentException("Event date must be in the future!");
+    }
+}
+package utils;
+
+public class CustomExceptions {
+
+    public static class EventFullException extends RuntimeException {
+        public EventFullException(String msg) { super(msg); }
+    }
+
+    public static class VolunteerUnavailableException extends RuntimeException {
+        public VolunteerUnavailableException(String msg) { super(msg); }
+    }
+}
+import model.*;
+import service.*;
+import java.time.LocalDate;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) {
+
+        VolunteerService vs = new VolunteerService();
+        EventService es = new EventService();
+        AssignmentService as = new AssignmentService();
+
+        vs.addVolunteer(new Volunteer(1, "Riya", "riya@gmail.com", List.of("Teaching", "First Aid"), true));
+        es.addEvent(new Event(101, "Health Camp", "NGO India", LocalDate.now().plusDays(5), 10));
+
+        as.assignVolunteer(1, 101, true, 10, 0);
+
+        System.out.println("Volunteers: " + vs.getAll());
+        System.out.println("Events: " + es.getAllEvents());
+        System.out.println("Assignments: " + as.getAssignments());
+    }
+}
